@@ -1,0 +1,118 @@
+version: '3.8'
+
+networks:
+  voiceshield-net:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
+  redisdata:
+    driver: local
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: voiceshield-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-voiceshield_db}
+      POSTGRES_USER: ${POSTGRES_USER:-voiceshield_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ChangeMeSecurePostgresPassword123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - voiceshield-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voiceshield_user} -d ${POSTGRES_DB:-voiceshield_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: voiceshield-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - voiceshield-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: voiceshield-ai-service
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - MODEL_ADAPTER=development
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - voiceshield-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ai/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - redis
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: voiceshield-backend
+    restart: unless-stopped
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-voiceshield_db}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-voiceshield_user}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-ChangeMeSecurePostgresPassword123}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - AI_SERVICE_BASE_URL=http://ai-service:8000
+      - JWT_SECRET=${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    ports:
+      - "8080:8080"
+    networks:
+      - voiceshield-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: voiceshield-frontend
+    restart: unless-stopped
+    ports:
+      - "4200:80"
+    networks:
+      - voiceshield-net
+    depends_on:
+      backend:
+        condition: service_healthy

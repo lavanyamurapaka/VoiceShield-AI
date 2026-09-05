@@ -1,0 +1,68 @@
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: voiceshield-ai-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/voiceshield_db}
+    username: ${SPRING_DATASOURCE_USERNAME:voiceshield_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:ChangeMeSecurePostgresPassword123}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration,filesystem:../database/migrations
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+app:
+  security:
+    jwt-secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    jwt-refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  ai-service:
+    base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
+    timeout-ms: 8000
+  risk-weights:
+    ai-detection: 0.30
+    speaker-mismatch: 0.20
+    prosody-anomaly: 0.15
+    spectral-anomaly: 0.15
+    cross-session: 0.10
+    contextual-risk: 0.10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: INFO
+    com.voiceshield: DEBUG
+    org.springframework.security: INFO

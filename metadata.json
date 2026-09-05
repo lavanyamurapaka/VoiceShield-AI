@@ -1,0 +1,6 @@
+{
+  "name": "VoiceShield AI",
+  "description": "AI-Powered Voice Impersonation Protection. Detect. Verify. Protect.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

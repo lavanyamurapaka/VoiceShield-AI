@@ -1,0 +1,66 @@
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-sky-500 selection:text-white">
+  <!-- Top Navigation Bar -->
+  <header class="h-16 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 flex items-center justify-between">
+    <div class="flex items-center gap-8">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
+          🛡️
+        </div>
+        <div>
+          <div class="font-bold text-base tracking-tight text-white flex items-center gap-2">
+            VoiceShield <span class="text-xs px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono border border-sky-500/20">AI</span>
+          </div>
+          <div class="text-[10px] text-slate-400 font-medium">Impersonation Defense Platform</div>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="hidden md:flex items-center gap-1 text-sm font-medium">
+        <a routerLink="/detection" routerLinkActive="bg-slate-800 text-sky-400" 
+          class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+          <span>🎙️</span> Live Detection
+        </a>
+        <a routerLink="/verification" routerLinkActive="bg-slate-800 text-sky-400" 
+          class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+          <span>🔐</span> Secondary Verification
+        </a>
+        <a routerLink="/alerts" routerLinkActive="bg-slate-800 text-sky-400" 
+          class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+          <span>🚨</span> SOC Alerts
+        </a>
+        <a routerLink="/analytics" routerLinkActive="bg-slate-800 text-sky-400" 
+          class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+          <span>📈</span> Analytics
+        </a>
+        <a routerLink="/health" routerLinkActive="bg-slate-800 text-sky-400" 
+          class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition flex items-center gap-2">
+          <span>⚙️</span> System Health
+        </a>
+      </nav>
+    </div>
+
+    <!-- User & Persona Switcher -->
+    <div class="flex items-center gap-3">
+      <div class="hidden sm:flex flex-col text-right">
+        <span class="text-xs font-semibold text-white">{{ currentUser.username }}</span>
+        <span class="text-[10px] text-sky-400 font-mono">{{ currentUser.role }}</span>
+      </div>
+
+      <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
+        <button (click)="switchRole('ROLE_ADMIN')" [class.bg-purple-600]="currentUser.role === 'ROLE_ADMIN'" class="px-2 py-1 rounded text-slate-300 transition">Admin</button>
+        <button (click)="switchRole('ROLE_ANALYST')" [class.bg-sky-600]="currentUser.role === 'ROLE_ANALYST'" class="px-2 py-1 rounded text-slate-300 transition">Analyst</button>
+        <button (click)="switchRole('ROLE_USER')" [class.bg-emerald-600]="currentUser.role === 'ROLE_USER'" class="px-2 py-1 rounded text-slate-300 transition">Operator</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-900 bg-slate-950 py-6 px-6 text-center text-xs text-slate-500">
+    VoiceShield AI Enterprise Platform • Real-time Spectral & Biometric Defense against Voice-Cloning Impersonation Attacks • Zero Simulated Inferences
+  </footer>
+</div>

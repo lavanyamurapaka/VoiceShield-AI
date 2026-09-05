@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'ADMIN' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountRole == 'ADMIN'
+      );
+    }
+    
+    function isAnalystOrAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role in ['ANALYST', 'ADMIN'] ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountRole in ['ANALYST', 'ADMIN']
+      );
+    }
+
+    // User Profiles Collection
+    match /users/{userId} {
+      // Users can read their own profile; Admins & Analysts can read all profiles
+      allow read: if isOwner(userId) || isAnalystOrAdmin();
+      
+      // Users can create their own profile during registration with default role USER or ANALYST (never ADMIN)
+      allow create: if isOwner(userId) &&
+        request.resource.data.accountRole in ['USER', 'ANALYST'] &&
+        request.resource.data.uid == userId;
+      
+      // Users can update their own profile fields (fullName, phoneNumber, organization, jobRole)
+      // but are strictly forbidden from altering their own accountRole, uid, or email
+      allow update: if (isOwner(userId) && 
+        request.resource.data.accountRole == resource.data.accountRole &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.email == resource.data.email) || isAdmin();
+      
+      // Only administrators can delete user accounts or elevate permissions
+      allow delete: if isAdmin();
+    }
+
+    // Detection Telemetry & History
+    match /detections/{detectionId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAnalystOrAdmin()
+      );
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAnalystOrAdmin();
+    }
+
+    // Security Incidents and SOC Alerts
+    match /alerts/{alertId} {
+      allow read: if isAnalystOrAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isAnalystOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Audit Logs
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit trail
+    }
+  }
+}
